@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone OTP Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .p-conf {
+            display: none;
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <div id="sender">
+            <input type="text" id="number" placeholder="Enter phone number (e.g., +1234567890)">
+            <div id="recaptcha-container"></div>
+            <input type="button" id="send" value="Send OTP">
+        </div>
+        <div id="verifier" style="display:none;">
+            <input type="text" id="verificationcode" placeholder="Enter OTP">
+            <input type="button" id="verify" value="Verify OTP">
+            <div class="p-conf">Number Verified!</div>
+            <div class="error" id="otp-error">OTP Error</div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDqHyeWna6Z6FAlMZULyCzmF3fIgCE7HpQ",
+            authDomain: "buyerbackend.firebaseapp.com",
+            projectId: "buyerbackend",
+            storageBucket: "buyerbackend.appspot.com",
+            messagingSenderId: "162470195257",
+            appId: "1:162470195257:web:ca53d4b54e90407e3e5de8",
+            measurementId: "G-HLD57PYB56"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        function render() {
+            window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
+                'size': 'invisible' // Use 'normal' for visible reCAPTCHA
+            }, auth);
+            recaptchaVerifier.render();
+        }
+
+        render();
+
+        document.getElementById('send').addEventListener('click', phoneAuth);
+        document.getElementById('verify').addEventListener('click', codeverify);
+
+        function phoneAuth() {
+            const number = document.getElementById('number').value;
+            signInWithPhoneNumber(auth, number, window.recaptchaVerifier)
+                .then(function (confirmationResult) {
+                    window.confirmationResult = confirmationResult;
+                    document.getElementById('verifier').style.display = 'block'; // Show the verifier
+                    console.log('OTP Sent');
+                }).catch(function (error) {
+                    alert(error.message);
+                });
+        }
+
+        function codeverify() {
+            const code = document.getElementById('verificationcode').value;
+            window.confirmationResult.confirm(code)
+                .then(function (result) {
+                    console.log('OTP Verified', result.user);
+                    document.querySelector('.p-conf').style.display = 'block'; // Show success message
+                    document.getElementById('otp-error').style.display = 'none'; // Hide error message
+                }).catch(function (error) {
+                    console.log('OTP Not correct');
+                    document.getElementById('otp-error').style.display = 'block'; // Show error message
+                    document.querySelector('.p-conf').style.display = 'none'; // Hide success message
+                });
+        }
+    </script>
+</body>
+</html>
